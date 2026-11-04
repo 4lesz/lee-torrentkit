@@ -1,0 +1,15 @@
+# 只上传 torrentkit（种子解析 / 磁力链接 / BT 下载）相关文件，其余一律忽略
+/*
+!/.gitignore
+!/.gitattributes
+!/README.md
+!/pyproject.toml
+!/start.bat
+!/start.sh
+!/torrentkit/
+!/tests/
+
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/

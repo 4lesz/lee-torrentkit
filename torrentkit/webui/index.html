@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>torrentkit · 种子解析与下载</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div class="orbs" aria-hidden="true">
+    <span class="orb orb-a"></span>
+    <span class="orb orb-b"></span>
+    <span class="orb orb-c"></span>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v11" />
+          <path d="m7.5 10.5 4.5 4.5 4.5-4.5" />
+          <path d="M5 20h14" />
+        </svg>
+      </div>
+      <div class="brand-text">
+        <h1>torrentkit</h1>
+        <p>解析种子 · 生成磁力 · 下载文件</p>
+      </div>
+    </div>
+    <div class="status-pill" id="server-status" title="本地服务状态">
+      <span class="dot"></span>
+      <span id="server-label">连接中…</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <section class="panel composer">
+      <div class="panel-head">
+        <h2>添加任务</h2>
+        <span class="hint">支持 .torrent 与 magnet</span>
+      </div>
+
+      <div class="dropzone" id="dropzone" tabindex="0" role="button"
+           aria-label="选择或拖拽 .torrent 文件">
+        <div class="drop-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 16V4" />
+            <path d="m7 9 5-5 5 5" />
+            <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+          </svg>
+        </div>
+        <p class="drop-title">拖拽 <code>.torrent</code> 文件到这里</p>
+        <p class="drop-sub">或点击选择文件</p>
+        <input type="file" id="file-input" accept=".torrent,application/x-bittorrent" hidden />
+      </div>
+
+      <div class="divider"><span>或粘贴磁力链接</span></div>
+
+      <textarea id="magnet-input" rows="3" spellcheck="false"
+                placeholder="magnet:?xt=urn:btih:0123456789abcdef...&amp;tr=udp://..."></textarea>
+
+      <details class="advanced">
+        <summary>高级选项</summary>
+        <div class="advanced-body">
+          <label class="field">
+            <span>直连 peer（每行一个，HOST:PORT）</span>
+            <textarea id="peers-input" rows="2" spellcheck="false"
+                      placeholder="192.168.1.10:6881"></textarea>
+          </label>
+          <label class="field">
+            <span>额外 Tracker（每行一个，http://、https:// 或 udp://）</span>
+            <textarea id="trackers-input" rows="2" spellcheck="false"
+                      placeholder="udp://tracker.example:6969/announce"></textarea>
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="use-dht" checked />
+            <span class="track" aria-hidden="true"></span>
+            <span>DHT 自动发现（私有种子自动关闭）</span>
+          </label>
+          <div class="row">
+            <label class="field compact">
+              <span>最大连接数</span>
+              <input id="max-peers" type="number" min="1" max="200" value="100" />
+            </label>
+            <label class="switch">
+              <input type="checkbox" id="rarest" />
+              <span class="track" aria-hidden="true"></span>
+              <span>稀有分片优先</span>
+            </label>
+          </div>
+        </div>
+      </details>
+
+      <label class="field dir-field">
+        <span>下载到</span>
+        <div class="dir-input-row">
+          <input id="save-dir" type="text" spellcheck="false" placeholder="留空则使用启动时的下载目录" />
+          <button id="browse-dir" class="btn ghost small" type="button">浏览…</button>
+        </div>
+      </label>
+
+      <div class="actions">
+        <button id="reset-btn" class="btn ghost" type="button">清空</button>
+        <button id="parse-btn" class="btn ghost" type="button">解析 / 生成磁力</button>
+        <button id="download-btn" class="btn primary" type="button" disabled>开始下载</button>
+      </div>
+      <p class="notice">仅用于你有权获取或分发的内容。下载目录可在下方选择。</p>
+    </section>
+
+    <section class="panel preview">
+      <div class="panel-head">
+        <h2>解析结果</h2>
+        <button id="clear-preview" class="btn tiny ghost" type="button" hidden>清空</button>
+      </div>
+
+      <div class="empty-state" id="preview-empty">
+        <div class="empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+               stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="16" rx="3" />
+            <path d="M7 9h10M7 13h6" />
+          </svg>
+        </div>
+        <p>解析种子或磁力链接后，这里会显示文件列表与磁力链接。</p>
+      </div>
+
+      <div id="preview-content" hidden>
+        <div class="preview-top">
+          <h3 id="pv-name" class="pv-name">—</h3>
+          <span class="chip" id="pv-source">种子文件</span>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat"><span>大小</span><strong id="pv-size">—</strong></div>
+          <div class="stat"><span>分片</span><strong id="pv-pieces">—</strong></div>
+          <div class="stat"><span>Tracker</span><strong id="pv-trackers">—</strong></div>
+          <div class="stat"><span>文件</span><strong id="pv-files">—</strong></div>
+        </div>
+
+        <div class="hash-row">
+          <span class="label">Info hash</span>
+          <code id="pv-hash">—</code>
+          <button class="btn tiny ghost" type="button" data-copy="pv-hash">复制</button>
+        </div>
+
+        <div class="magnet-box">
+          <div class="magnet-head">
+            <span>磁力链接</span>
+            <button class="btn tiny ghost" type="button" data-copy="pv-magnet">复制</button>
+          </div>
+          <textarea id="pv-magnet" readonly rows="3" spellcheck="false"></textarea>
+        </div>
+
+        <p class="warn" id="pv-warn" hidden></p>
+
+        <details class="file-list" id="pv-file-details" hidden>
+          <summary>文件列表 <span id="pv-file-count"></span></summary>
+          <ul id="pv-files-list"></ul>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <section class="panel jobs-panel">
+    <div class="panel-head">
+      <h2>下载任务</h2>
+      <span class="hint" id="jobs-summary"></span>
+    </div>
+    <div id="jobs-list" class="jobs-list" aria-live="polite"></div>
+    <div id="jobs-empty" class="empty-state">
+      <div class="empty-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"
+             stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3v10" />
+          <path d="m8 9 4 4 4-4" />
+          <path d="M4 18h16" />
+        </svg>
+      </div>
+      <p>还没有任务。解析一个种子后点击「开始下载」。</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    torrentkit <span id="version"></span> · 本地运行，数据不会上传到任何服务器
+  </footer>
+
+  <div class="modal" id="dir-modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="dir-title">
+      <div class="modal-head">
+        <h3 id="dir-title">选择下载目录</h3>
+        <button id="dir-close" class="icon-btn" type="button" aria-label="关闭">×</button>
+      </div>
+      <div class="dir-toolbar">
+        <button id="dir-up" class="btn tiny ghost" type="button">上一级</button>
+        <div class="dir-roots" id="dir-roots"></div>
+        <button id="dir-refresh" class="btn tiny ghost" type="button">刷新</button>
+      </div>
+      <div class="dir-path" id="dir-path"></div>
+      <ul class="dir-list" id="dir-list"></ul>
+      <div class="dir-footer">
+        <input id="new-dir-name" type="text" spellcheck="false" placeholder="新建文件夹名称" />
+        <button id="new-dir-btn" class="btn tiny ghost" type="button">新建</button>
+        <span class="spacer"></span>
+        <button id="dir-cancel" class="btn ghost" type="button">取消</button>
+        <button id="dir-select" class="btn primary" type="button">选择此目录</button>
+      </div>
+      <p class="dir-error" id="dir-error" hidden></p>
+    </div>
+  </div>
+
+  <div id="toasts" class="toasts" aria-live="assertive"></div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

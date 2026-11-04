@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "torrentkit"
+version = "0.1.0"
+description = "Pure-Python BitTorrent metainfo parser, magnet generator and minimal client"
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "lee" }]
+keywords = ["bittorrent", "torrent", "magnet", "bencode"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Communications :: File Sharing",
+]
+dependencies = []
+
+[project.scripts]
+torrentkit = "torrentkit.cli:main"
+
+[tool.setuptools.packages.find]
+include = ["torrentkit*"]
+
+[tool.setuptools.package-data]
+torrentkit = ["webui/*"]
