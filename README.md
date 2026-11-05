@@ -30,9 +30,18 @@ torrentkit 是一个面向学习和个人使用的种子 / 磁力下载工具，
 | `torrentkit/cli.py` | 命令行入口 |
 | `tests/` | 单元测试与本地端到端测试 |
 
+## 下载
+
+- 不会用 git：在仓库页面点绿色的 **Code** 按钮 → **Download ZIP**，解压即可。
+- 会用 git：
+
+```bash
+git clone https://github.com/4lesz/lee-torrentkit.git
+```
+
 ## 一键启动
 
-只需要安装 Python 3.9+，无需 `pip install` 任何依赖。
+只需要安装 Python 3.9+（[下载地址](https://www.python.org/downloads/)，Windows 安装时勾选「Add Python to PATH」），无需 `pip install` 任何依赖。
 
 - **Windows**：双击项目根目录下的 `start.bat`。
 - **macOS / Linux**：在项目目录执行 `./start.sh`（首次可能需要 `chmod +x start.sh`）。
