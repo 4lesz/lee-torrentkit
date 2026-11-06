@@ -4,21 +4,17 @@ rem Double-click to start the Web UI and open it in your browser.
 setlocal
 cd /d "%~dp0"
 
+rem Try each candidate for real and keep the first one that runs Python 3.9+.
+rem (py.exe may exist but have no usable runtime; "python" may be the Store alias.)
 set "PY="
-where py >nul 2>nul && set "PY=py -3"
-if not defined PY (
-    where python >nul 2>nul && set "PY=python"
+for %%C in ("py -3" "py" "python" "python3") do (
+    if not defined PY (
+        %%~C -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)" >nul 2>nul && set "PY=%%~C"
+    )
 )
 if not defined PY (
-    echo [torrentkit] Python 3.9+ not found. Install it from https://www.python.org/downloads/
-    pause
-    exit /b 1
-)
-
-%PY% -c "import sys; sys.exit(0 if sys.version_info >= (3, 9) else 1)"
-if errorlevel 1 (
-    echo [torrentkit] Python 3.9 or newer is required.
-    %PY% --version
+    echo [torrentkit] Python 3.9+ not found.
+    echo [torrentkit] Install it from https://www.python.org/downloads/ and tick "Add Python to PATH".
     pause
     exit /b 1
 )
